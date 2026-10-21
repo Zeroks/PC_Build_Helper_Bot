@@ -10,6 +10,7 @@ from keyboards import (
     start_new_build_keyboard, 
     select_components_keyboard , 
     select_component_keyboard, 
+    check_result_keyboard,
 
     select_first_type_component_keyboard,
     select_second_type_component_keyboard,
@@ -191,6 +192,125 @@ async def add_component_in_build(callback, parts):
         build_check_status(user_builds[user_id]),
         reply_markup=start_new_build_keyboard()
     )
+
+def full_check_build(build):
+    print(f"CPU: {build.get('CPU')}")
+    print(f"MB: {build.get('MOTHERBOARD')}")
+    print(f"RAM: {build.get("RAM")}")
+
+    errors = []
+    warnings = []
+
+    cpu = build.get("CPU")
+    mb = build.get("MOTHERBOARD")
+    ram = build.get("RAM")
+    gpu = build.get("GPU")
+    psu = build.get("PU")
+    case = build.get("CASE")
+
+    if cpu and mb:
+        if cpu["socket"] != mb["socket"]:
+            errors.append(
+                f"❌ Socket mismatch: CPU {cpu['name']} ({cpu['socket']}) "
+                f"doesn't fit motherboard {mb['name']} ({mb['socket']})"
+            )
+
+    if cpu and ram:
+        if ram["ram_type"] not in cpu["ram_type"]:
+            errors.append(
+                f"❌ RAM type mismatch: CPU supports {cpu['ram_type']}, "
+                f"but you selected {ram['ram_type']}"
+            )
+
+    if mb and ram:
+        if ram["freq"] > mb["ram_max_freq"]:
+            warnings.append(
+                f"⚠️ RAM frequency {ram['freq']} MHz exceeds motherboard max "
+                f"{mb['ram_max_freq']} MHz. RAM will run at lower speed."
+            )
+
+    if gpu and psu:
+        if psu["power"] < gpu["recommended_psu"]:
+            errors.append(
+                f"❌ PSU too weak: {gpu['name']} requires {gpu['recommended_psu']}W, "
+                f"but your PSU is only {psu['power']}W"
+            )
+
+    if cpu and gpu and psu:
+        total = cpu["tdp"] + gpu["power"] + 100
+        if total > psu["power"]:
+            errors.append(
+                f"❌ Total power exceeds PSU: ~{total}W needed, "
+                f"but PSU is only {psu['power']}W"
+            )
+
+    if gpu and case:
+        if gpu["length"] > case["max_gpu_length"]:
+            errors.append(
+                f"❌ GPU too long: {gpu['name']} is {gpu['length']} mm, "
+                f"but case {case['name']} supports max {case['max_gpu_length']} mm"
+            )
+
+    if mb and case:
+        if mb["form_factor"] not in case["supported_form_factors"]:
+            errors.append(
+                f"❌ Form factor mismatch: motherboard {mb['name']} ({mb['form_factor']}) "
+                f"doesn't fit case {case['name']}"
+            )
+
+    print(errors, warnings)       
+    return errors, warnings
+    
+    
+
+async def check_build(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    build = user_builds.get(user_id)
+    if build is None:
+        await callback.answer("Build not found")
+        return
+    selected = []
+    for k, v in build.items():
+        if v is not None:
+            selected.append(k)
+    count = len(selected)
+    if count == 0:
+        text = "❌ Your build is empty. Add at least one component."
+    elif count == 1:
+        text = f"⚠️ Only one component selected ({selected[0]}). Add more for compatibility check."
+    else:
+        errors, warnings = full_check_build(build)
+        parts = []
+        if errors:
+            parts.append("🔴 Build has errors:\n\n" + "\n".join(errors))
+
+        if warnings:
+            parts.append("🟡 Warnings:\n\n" + "\n".join(warnings))
+
+        if not errors and not warnings:
+            text = "🟢 Build is fully compatible!"
+        else:
+            text = "\n\n".join(parts)
+    
+    await callback.message.edit_text(
+        text,
+        reply_markup=check_result_keyboard(),
+        parse_mode="Markdown"
+    )
+
+def search_in_base(search_type, query):
+    result = []
+    from data.COMPONENTS_DATA import COMPONENTS
+    component_data = COMPONENTS.get(search_type)
+    for brand, series_dict in component_data.items():
+        for series_name, components in series_dict.items():
+            for component in components:
+                if query in component["name"].lower():
+                    result.append(component)
+    return result
+
+
+
     
      
 

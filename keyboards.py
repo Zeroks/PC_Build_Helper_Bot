@@ -18,12 +18,12 @@ def start_keyboard():
 def start_new_build_keyboard():
     buttons = [
         [
-            InlineKeyboardButton(text="Select component", callback_data="OpenComponents"),
-            InlineKeyboardButton(text="Check build", callback_data="CheckBuild"),
-            InlineKeyboardButton(text="Save build", callback_data="SaveBuild")
+            InlineKeyboardButton(text="🔍Add component", callback_data="OpenComponents"),
+            InlineKeyboardButton(text="🧐Check build", callback_data="CheckBuild"),
+            InlineKeyboardButton(text="💾Save build", callback_data="SaveBuild")
         ],
         [
-            InlineKeyboardButton(text="Back to main", callback_data="BackMain"), 
+            InlineKeyboardButton(text="🏠Back to main", callback_data="BackMain"), 
         ]
         
     ]
@@ -42,6 +42,21 @@ def select_components_keyboard():
             InlineKeyboardButton(text="◀️Back", callback_data="BackBuild"),
             InlineKeyboardButton(text="🏠Back to main", callback_data="BackMain")
         ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def check_result_keyboard():
+    buttons = [
+        [
+            InlineKeyboardButton(text="🔍Add component", callback_data="OpenComponents"),
+            InlineKeyboardButton(text="🧐Check build", callback_data="CheckBuild"),
+            InlineKeyboardButton(text="💾Save build", callback_data="SaveBuild")
+        ],
+        [
+            InlineKeyboardButton(text="◀️Back", callback_data="BackBuild"),
+            InlineKeyboardButton(text="🏠Back to main", callback_data="BackMain"), 
+        ]
+            
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -91,6 +106,8 @@ def select_final_component_keyboard(component_type, brand, subcategory, models_l
         for model in models_list
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 
 
 

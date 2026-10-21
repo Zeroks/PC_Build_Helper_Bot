@@ -1,4 +1,4 @@
-# Default ignored files
+
 /shelf/
 /workspace.xml
 
@@ -16,3 +16,8 @@ env/
 
 .idea/
 .vscode/
+
+
+*.db
+*.sqlite
+*.sqlite3
